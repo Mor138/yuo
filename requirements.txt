@@ -1,8 +1,8 @@
-openai
 google-api-python-client
 google-auth
 google-auth-oauthlib
-moviepy
+moviepy             # версия фиксируется в workflow
 pillow
 python-dotenv
 tqdm
+requests      
