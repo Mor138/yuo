@@ -1,20 +1,17 @@
 name: YouTube Shorts Bot
 
 on:
-  workflow_dispatch:            # ручной запуск с вкладки Actions
-  schedule:                     # ежедневный автозапуск
-    - cron: '0 12 * * *'        # 12:00 UTC (15:00 Мск)
+  workflow_dispatch:          # запуск в-ручную
+  schedule:
+    - cron: '0 12 * * *'      # ежедневно в 12-00 UTC
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
 
-    env:                         # общие переменные окружения
-      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-
     steps:
       # ---------- 1. Клонируем репозиторий ----------
-      - name: 🛎️ Checkout
+      - name: 📥 Checkout
         uses: actions/checkout@v4
 
       # ---------- 2. Ставим Python ----------
@@ -29,17 +26,16 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          restore-keys: ${{ runner.os }}-pip-
 
       # ---------- 4. Устанавливаем зависимости ----------
-      - name: 📦 Install deps + фиксим MoviePy
+      - name: 📦 Install deps + фикс MoviePy
         run: |
           python -m venv venv
           source venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # переустанавливаем рабочую версию moviepy с editor-модулем
+          # исправляем баг MoviePy 2.x — ставим стабильную 1.0.3
           pip install --force-reinstall "moviepy==1.0.3"
 
       # ---------- 5. Декодируем client_secret.json ----------
@@ -49,7 +45,7 @@ jobs:
         run: |
           echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
           if grep -q '"' client_secret.b64; then
-            mv client_secret.b64 client_secret.json        # пришёл «сырой» JSON
+            mv client_secret.b64 client_secret.json         # уже JSON
           else
             base64 -d client_secret.b64 > client_secret.json
           fi
@@ -57,12 +53,13 @@ jobs:
       # ---------- 6. Запускаем бота ----------
       - name: 🤖 Run yt_shorts_bot.py
         env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           GOOGLE_CLIENT_SECRET: file://client_secret.json
         run: |
           source venv/bin/activate
           python yt_shorts_bot.py
 
-      # ---------- 7. Коммитим историю (если появилась) ----------
+      # ---------- 7. Коммитим history/* если появился новый файл ----------
       - name: 📜 Commit history
         if: success()
         run: |
@@ -70,7 +67,7 @@ jobs:
           git config user.email github-actions@github.com
           git add history/*.json || true
           if git diff --cached --quiet; then
-            echo "Нет новых файлов history/* — коммит не нужен"
+            echo "No new history to commit"
           else
             git commit -m "Add history log" && git push
           fi
