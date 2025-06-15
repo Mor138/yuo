@@ -1,26 +1,20 @@
 name: YouTube Shorts Bot
 
 on:
-  workflow_dispatch:          # запуск в-ручную
+  workflow_dispatch:
   schedule:
-    - cron: '0 12 * * *'      # ежедневно в 12-00 UTC
+    - cron: '0 12 * * *'
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-
     steps:
-      # ---------- 1. Клонируем репозиторий ----------
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # ---------- 2. Ставим Python ----------
-      - name: 🐍 Set up Python 3.10
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
+        with: { python-version: '3.10' }
 
-      # ---------- 3. Кэшируем pip-пакеты ----------
       - name: 💾 Cache pip
         uses: actions/cache@v3
         with:
@@ -28,38 +22,30 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: ${{ runner.os }}-pip-
 
-      # ---------- 4. Устанавливаем зависимости ----------
-      - name: 📦 Install deps + фикс MoviePy
+      - name: 📦 Install deps (--fix MoviePy)
         run: |
           python -m venv venv
           source venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # исправляем баг MoviePy 2.x — ставим стабильную 1.0.3
           pip install --force-reinstall "moviepy==1.0.3"
 
-      # ---------- 5. Декодируем client_secret.json ----------
       - name: 🔐 Decode Google client secret
-        env:
-          GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
+        env: { GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }} }
         run: |
           echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
-          if grep -q '"' client_secret.b64; then
-            mv client_secret.b64 client_secret.json         # уже JSON
-          else
-            base64 -d client_secret.b64 > client_secret.json
-          fi
+          if grep -q '"' client_secret.b64; then mv client_secret.b64 client_secret.json
+          else base64 -d client_secret.b64 > client_secret.json; fi
 
-      # ---------- 6. Запускаем бота ----------
       - name: 🤖 Run yt_shorts_bot.py
         env:
-          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
-          GOOGLE_CLIENT_SECRET: file://client_secret.json
+          DEEPSEEK_API_KEY:      ${{ secrets.DEEPSEEK_API_KEY }}
+          OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_CLIENT_SECRET:  file://client_secret.json
         run: |
           source venv/bin/activate
           python yt_shorts_bot.py
 
-      # ---------- 7. Коммитим history/* если появился новый файл ----------
       - name: 📜 Commit history
         if: success()
         run: |
