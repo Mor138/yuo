@@ -9,7 +9,7 @@ The bot requires the following secrets:
 
 - `OPENAI_API_KEY` – OpenAI API key
 - `DEEPSEEK_API_KEY` – DeepSeek API key
-- `GOOGLE_CLIENT_SECRET_JSON` – contents of `client_secret.json` (JSON or base64)
+- `GOOGLE_CLIENT_SECRET` – `file://client_secret.json` or `base64://...`
 
 ## History
 

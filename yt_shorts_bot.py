@@ -59,7 +59,7 @@ from tqdm import tqdm
 # 0. INIT & CONFIG
 # -----------------------------------------------------------
 load_dotenv()
-openai.api_key = os.getenv("OPENAI_API_KEY")
+openai_client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DB = Path("bot_state.sqlite")
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
@@ -128,11 +128,11 @@ def make_assets(script: Dict) -> (List[Path], Path):
     images = []
     for i, shot in enumerate(tqdm(script["shots"], desc="Images")):
         prompt = shot["img_prompt"] + ", cinematic, 8k, vertical"
-        igen = openai.images.generate(
+        igen = openai_client.images.generate(
             model="dall-e-3",
             prompt=prompt,
             n=1,
-            size="1080x1920",
+            size="1024x1792",
         )
         url = igen.data[0].url
         img_path = Path(tempfile.mktemp(suffix=f"_{i}.png"))
@@ -142,13 +142,13 @@ def make_assets(script: Dict) -> (List[Path], Path):
         images.append(img_path)
 
     # ---- TTS (пример с OpenAI "tts-1") ----
-    audio_resp = openai.audio.speech.create(
+    audio_resp = openai_client.audio.speech.create(
         model="tts-1",
         voice="alloy",
         input=script["voiceover"]
     )
     voice_path = Path(tempfile.mktemp(suffix=".mp3"))
-    voice_path.write_bytes(audio_resp.audio.data)
+    voice_path.write_bytes(audio_resp.content)
     return images, voice_path
 
 # -----------------------------------------------------------
@@ -167,8 +167,8 @@ def build_video(images: List[Path], voice: Path, out: Path, script: Dict):
             .resize(height=1920)
             .set_position("center")
         )
-        # лёгкий Ken‑Burns
-        clip = clip.fx(vfx.zoom_in, 1.05)
+        # лёгкий Ken‑Burns: плавный зум 1 → 1.05
+        clip = clip.fx(vfx.resize, lambda t: 1 + 0.05 * t / dur)
         img_clips.append(clip)
         total_duration += dur
 
