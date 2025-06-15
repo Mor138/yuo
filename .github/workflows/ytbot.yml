@@ -2,29 +2,37 @@ name: YouTube Shorts Bot
 
 on:
   schedule:
-    - cron: '0 12 * * *'
+    - cron: '0 12 * * *'  # каждый день в 12:00 UTC
   workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Install dependencies (с принудительной переустановкой moviepy)
         run: |
-          pip install --upgrade pip
-          pip install -r requirements.txt
+          python3 -m pip install --upgrade pip
+          pip uninstall -y moviepy || true
+          pip cache purge || true
+          pip install moviepy
+          pip install \
+            openai \
+            google-api-python-client \
+            google-auth \
+            google-auth-oauthlib \
+            pillow \
+            python-dotenv \
+            tqdm
 
-      - name: Debug environment
+      - name: Debug: проверить, работает ли moviepy
         run: |
-          which python
-          python --version
-          pip --version
-          pip list
+          python3 -c "from moviepy.editor import VideoFileClip; print('✅ MoviePy работает')"
 
-      - name: Decode client secret
+      - name: Расшифровка client_secret.json
         run: |
           echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
           if grep -q '"' client_secret.b64; then
@@ -35,21 +43,21 @@ jobs:
         env:
           GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
 
-      - name: Run bot
+      - name: Запуск бота
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_CLIENT_SECRET: file://client_secret.json
         run: |
-          python yt_shorts_bot.py
+          python3 yt_shorts_bot.py
 
-      - name: Commit history
+      - name: Commit history (если есть изменения)
         if: success()
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add history/*.json || true
           if git diff --cached --quiet; then
-            echo "No changes to commit"
+            echo "❌ Нет изменений для коммита"
           else
-            git commit -m "Add history" && git push
+            git commit -m "✅ Add history" && git push
           fi
