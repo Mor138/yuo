@@ -1,9 +1,1 @@
-openai
-google-api-python-client
-google-auth
-google-auth-oauthlib
-moviepy==1.0.3       # фиксированная версия для совместимости
-pillow
-python-dotenv
-tqdm
-requests             # для DeepSeek
+
