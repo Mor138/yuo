@@ -13,3 +13,12 @@ The bot requires the following secrets:
 ## History
 
 Each run writes a JSON file to `history/` with the upload information.
+
+## Installing dependencies
+
+Before running the bot locally you need Python 3.10+ and the packages listed in
+`requirements.txt`. Install them with:
+
+```bash
+pip install -r requirements.txt
+```
