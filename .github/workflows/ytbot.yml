@@ -1,0 +1,59 @@
+name: YouTube Shorts Bot
+
+on:
+  schedule:
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install --upgrade pip
+          pip install google-api-python-client google-auth google-auth-oauthlib openai moviepy pillow python-dotenv tqdm
+          echo "venv/bin/activate" >> $GITHUB_PATH
+
+      - name: Decode client secret
+        run: |
+          echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
+          if grep -q '"' client_secret.b64; then
+            # assume raw json
+            mv client_secret.b64 client_secret.json
+          else
+            base64 -d client_secret.b64 > client_secret.json
+          fi
+        env:
+          GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
+
+      - name: Run bot
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_CLIENT_SECRET: file://client_secret.json
+        run: |
+          python yt_shorts_bot.py
+
+      - name: Commit history
+        if: success()
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add history/*.json || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Add history" && git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
