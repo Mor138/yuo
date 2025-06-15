@@ -1,8 +1,8 @@
 google-api-python-client
 google-auth
 google-auth-oauthlib
-moviepy             # версия фиксируется в workflow
+moviepy              # точную версию ставит workflow
 pillow
 python-dotenv
 tqdm
-requests      
+requests             # нужен для DeepSeek
