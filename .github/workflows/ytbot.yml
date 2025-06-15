@@ -12,15 +12,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install google-api-python-client google-auth google-auth-oauthlib openai moviepy pillow python-dotenv tqdm
+          pip install -r requirements.txt
+
+      - name: Debug environment
+        run: |
+          which python
+          python --version
+          pip --version
+          pip list
 
       - name: Decode client secret
         run: |
