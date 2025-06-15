@@ -2,23 +2,23 @@ name: YouTube Shorts Bot
 
 on:
   schedule:
-    - cron: '0 12 * * *'  # Запуск каждый день в 12:00 UTC
-  workflow_dispatch:       # Возможность ручного запуска
+    - cron: '0 12 * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🛎️ Checkout репозитория
+      - name: Checkout репозитория
         uses: actions/checkout@v3
 
-      - name: 🐍 Установка Python
+      - name: Установка Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: 💾 Кэширование pip-зависимостей
+      - name: Кэш pip-зависимостей
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
@@ -26,12 +26,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: 📦 Установка зависимостей
+      - name: Установка зависимостей
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: 🔐 Декодирование client_secret.json
+      - name: Декодирование client_secret.json
         run: |
           echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
           if grep -q '"' client_secret.b64; then
@@ -42,21 +42,31 @@ jobs:
         env:
           GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
 
-      - name: 🤖 Запуск бота
+      - name: Проверка moviepy
+        run: |
+          python - <<EOF
+          try:
+            import moviepy.editor
+            print("✅ moviepy.editor доступен")
+          except ModuleNotFoundError as e:
+            print("❌", e)
+            exit(1)
+          EOF
+
+      - name: Запуск бота
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_CLIENT_SECRET: file://client_secret.json
-        run: |
-          python yt_shorts_bot.py
+        run: python yt_shorts_bot.py
 
-      - name: 💾 Коммит истории (если есть изменения)
+      - name: Коммит истории
         if: success()
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add history/*.json || true
           if git diff --cached --quiet; then
-            echo "Нет изменений для коммита"
+            echo "Нет изменений"
           else
-            git commit -m "📜 Add history" && git push
+            git commit -m "Add history" && git push
           fi
