@@ -23,13 +23,11 @@ jobs:
           source venv/bin/activate
           pip install --upgrade pip
           pip install google-api-python-client google-auth google-auth-oauthlib openai moviepy pillow python-dotenv tqdm
-          echo "venv/bin/activate" >> $GITHUB_PATH
 
       - name: Decode client secret
         run: |
           echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
           if grep -q '"' client_secret.b64; then
-            # assume raw json
             mv client_secret.b64 client_secret.json
           else
             base64 -d client_secret.b64 > client_secret.json
@@ -37,13 +35,13 @@ jobs:
         env:
           GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
 
-      - name: Run bot
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_CLIENT_SECRET: file://client_secret.json
+      - name: Run bot (inside venv)
         run: |
           source venv/bin/activate
           python yt_shorts_bot.py
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_CLIENT_SECRET: file://client_secret.json
 
       - name: Commit history
         if: success()
