@@ -8,6 +8,7 @@ YouTube Shorts. A GitHub Actions workflow runs the bot daily at 12:00 UTC.
 The bot requires the following secrets:
 
 - `OPENAI_API_KEY` – OpenAI API key
+- `DEEPSEEK_API_KEY` – DeepSeek API key
 - `GOOGLE_CLIENT_SECRET_JSON` – contents of `client_secret.json` (JSON or base64)
 
 ## History
