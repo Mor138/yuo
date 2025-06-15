@@ -33,7 +33,7 @@ ELEVENLABS_API_KEY=...                          # для TTS (или друго�
 """
 
 from __future__ import annotations
-import os, json, random, sqlite3, tempfile, datetime, time
+import os, json, random, sqlite3, tempfile, datetime, time, base64
 from pathlib import Path
 from typing import List, Dict
 
@@ -42,7 +42,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, vfx
 from dotenv import load_dotenv
 from tqdm import tqdm
 
@@ -211,11 +211,26 @@ def mark_done(topic: str, video_id: str):
     conn.commit()
     conn.close()
 
+def save_history(topic: str, video_id: str, dt: datetime.datetime) -> None:
+    """Writes a JSON log with info about the run."""
+    hist = Path("history")
+    hist.mkdir(exist_ok=True)
+    info = {
+        "time": dt.isoformat(),
+        "topic": topic,
+        "video_id": video_id,
+    }
+    (hist / f"{dt.date()}.json").write_text(
+        json.dumps(info, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
 # -----------------------------------------------------------
 # 7. MAIN PIPELINE
 # -----------------------------------------------------------
 
 def pipeline():
+    now = datetime.datetime.utcnow()
     topic = pick_new_topic()
     print("Topic:", topic)
 
@@ -231,15 +246,13 @@ def pipeline():
     print("🎉 Uploaded http://youtube.com/watch?v=" + vid)
 
     mark_done(topic, vid)
+    save_history(topic, vid, now)
 
 # -----------------------------------------------------------
 
 if __name__ == "__main__":
-    while True:
-        try:
-            pipeline()
-            # Спим 4 ч, меняй как надо
-            time.sleep(60 * 60 * 4)
-        except Exception as e:
-            print("ERROR:", e)
-            time.sleep(300)
+    try:
+        pipeline()
+    except Exception as e:
+        print("ERROR:", e)
+        raise
