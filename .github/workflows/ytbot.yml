@@ -19,8 +19,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m venv venv
-          source venv/bin/activate
           pip install --upgrade pip
           pip install google-api-python-client google-auth google-auth-oauthlib openai moviepy pillow python-dotenv tqdm
 
@@ -35,13 +33,12 @@ jobs:
         env:
           GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }}
 
-      - name: Run bot (inside venv)
-        run: |
-          source venv/bin/activate
-          python yt_shorts_bot.py
+      - name: Run bot
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_CLIENT_SECRET: file://client_secret.json
+        run: |
+          python yt_shorts_bot.py
 
       - name: Commit history
         if: success()
@@ -54,5 +51,3 @@ jobs:
           else
             git commit -m "Add history" && git push
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
