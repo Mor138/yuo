@@ -1,59 +1,35 @@
 name: YouTube Shorts Bot
 
 on:
-  workflow_dispatch:
   schedule:
     - cron: '0 12 * * *'
+  workflow_dispatch:
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: 🐍 Set up Python
-        uses: actions/setup-python@v5
-        with: { python-version: '3.10' }
-
-      - name: 💾 Cache pip
-        uses: actions/cache@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: ${{ runner.os }}-pip-
+          python-version: '3.10'
 
-      - name: 📦 Install deps (--fix MoviePy)
+      - name: Install dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install -r requirements.txt
-          pip install --force-reinstall "moviepy==1.0.3"
 
-      - name: 🔐 Decode Google client secret
-        env: { GOOGLE_CLIENT_SECRET_JSON: ${{ secrets.GOOGLE_CLIENT_SECRET_JSON }} }
-        run: |
-          echo "$GOOGLE_CLIENT_SECRET_JSON" > client_secret.b64
-          if grep -q '"' client_secret.b64; then mv client_secret.b64 client_secret.json
-          else base64 -d client_secret.b64 > client_secret.json; fi
-
-      - name: 🤖 Run yt_shorts_bot.py
+      - name: Run bot
         env:
-          DEEPSEEK_API_KEY:      ${{ secrets.DEEPSEEK_API_KEY }}
-          OPENAI_API_KEY:        ${{ secrets.OPENAI_API_KEY }}
-          GOOGLE_CLIENT_SECRET:  file://client_secret.json
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: |
           source venv/bin/activate
           python yt_shorts_bot.py
-
-      - name: 📜 Commit history
-        if: success()
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add history/*.json || true
-          if git diff --cached --quiet; then
-            echo "No new history to commit"
-          else
-            git commit -m "Add history log" && git push
-          fi
