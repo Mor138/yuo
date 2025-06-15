@@ -42,7 +42,15 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, vfx
+import sys
+import subprocess
+
+try:
+    from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, vfx
+except ModuleNotFoundError as e:
+    print("[debug] failed to import moviepy:", e)
+    subprocess.call([sys.executable, "-m", "pip", "list"])
+    raise
 from dotenv import load_dotenv
 from tqdm import tqdm
 
@@ -54,6 +62,8 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 DB = Path("bot_state.sqlite")
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "client_secret.json")
+print("[debug] Python", sys.version)
+subprocess.call([sys.executable, "-m", "pip", "--version"])
 
 # -----------------------------------------------------------
 # 1. TOPIC SOURCE
@@ -134,7 +144,7 @@ def make_assets(script: Dict) -> (List[Path], Path):
 # 4. BUILD VIDEO
 # -----------------------------------------------------------
 
-def build_video(images: List[Path], voice: Path, out: Path):
+def build_video(images: List[Path], voice: Path, out: Path, script: Dict):
     audio_clip = AudioFileClip(str(voice))
     img_clips = []
     total_duration = 0.0
@@ -239,7 +249,7 @@ def pipeline():
 
     out = Path(tempfile.mktemp(suffix=".mp4"))
     print("Building video →", out)
-    build_video(images, voice, out)
+    build_video(images, voice, out, script)
 
     yt = yt_service()
     vid = upload_video(out, script, yt)
