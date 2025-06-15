@@ -23,3 +23,6 @@ Before running the bot locally you need Python 3.10+ and the packages listed in
 ```bash
 pip install -r requirements.txt
 ```
+
+`requirements.txt` pins `moviepy==1.0.3`, because newer versions can break the
+import used in the script.

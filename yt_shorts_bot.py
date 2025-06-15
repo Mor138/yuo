@@ -51,6 +51,7 @@ try:
 except ModuleNotFoundError as e:
     print("[debug] failed to import moviepy:", e)
     subprocess.call([sys.executable, "-m", "pip", "list"])
+    print("[hint] try: pip install moviepy==1.0.3")
     raise
 from dotenv import load_dotenv
 from tqdm import tqdm
