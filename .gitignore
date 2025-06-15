@@ -1,8 +1,7 @@
-
-# Исключаем папку с моделями и сгенерированные данные
 models/
 out/
 *.mp4
 *.png
 *.mp3
 *.safetensors
+client_secrets.json
