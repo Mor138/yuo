@@ -1,8 +1,8 @@
-moviepy==1.0.3
 openai
-pillow
-python-dotenv
-tqdm
 google-api-python-client
 google-auth
 google-auth-oauthlib
+moviepy
+pillow
+python-dotenv
+tqdm
